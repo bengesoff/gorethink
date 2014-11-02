@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -256,6 +257,9 @@ func (c *Connection) SendQuery(s *Session, q Query, opts map[string]interface{},
 }
 
 func (c *Connection) Close() error {
+	fmt.Printf("closing connection %p\n", c)
+	debug.PrintStack()
+
 	err := c.NoreplyWait()
 	if err != nil {
 		return err
