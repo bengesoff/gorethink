@@ -35,7 +35,8 @@ type Connection struct {
 	// embed the net.Conn type, so that we can effectively define new methods on
 	// it (interfaces do not allow that)
 	net.Conn
-	s *Session
+	s      *Session
+	closed bool
 
 	sync.Mutex
 }
@@ -149,6 +150,14 @@ func (c *Connection) ReadResponse(s *Session, token int64) (*Response, error) {
 func (c *Connection) SendQuery(s *Session, q Query, opts map[string]interface{}, async bool) (*Cursor, error) {
 	var err error
 
+	c.Lock()
+	closed := c.closed
+	c.Unlock()
+
+	if closed {
+		return errors.New("connection closed")
+	}
+
 	// Build query
 	b, err := json.Marshal(q.build())
 	if err != nil {
@@ -257,15 +266,16 @@ func (c *Connection) SendQuery(s *Session, q Query, opts map[string]interface{},
 }
 
 func (c *Connection) Close() error {
-	fmt.Printf("closing connection %p\n", c)
-	debug.PrintStack()
+	if !c.closed {
+		err := c.NoreplyWait()
+		if err != nil {
+			return err
+		}
 
-	err := c.NoreplyWait()
-	if err != nil {
-		return err
+		return c.Conn.Close()
 	}
 
-	return c.Conn.Close()
+	return nil
 }
 
 // noreplyWaitQuery sends the NOREPLY_WAIT query to the server.
