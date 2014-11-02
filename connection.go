@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -155,7 +155,7 @@ func (c *Connection) SendQuery(s *Session, q Query, opts map[string]interface{},
 	c.Unlock()
 
 	if closed {
-		return errors.New("connection closed")
+		return nil, errors.New("connection closed")
 	}
 
 	// Build query
