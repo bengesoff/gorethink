@@ -25,9 +25,6 @@ build:
                 cd $WERCKER_SOURCE_DIR
                 go version
                 go get ./...
-                go get -u gopkg.in/check.v1
-                go get golang.org/x/tools/cmd/cover
-                go get github.com/mattn/goveralls
 
         # Build the project
         - script:
@@ -37,13 +34,23 @@ build:
 
         # Test the project
         - script:
-            name: test
-            code: |
-                go test -covermode=count -coverprofile=profile.cov ./...
+            name: Test
+            code: |-
+                go get -u gopkg.in/check.v1
+                go get launchpad.net/gocheck
+                go get github.com/axw/gocov/gocov
+                gocov test ./... > coverage.json
+        - script:
+            name: Coverage
+            code: |-
+                go get github.com/matm/gocov-html
+                gocov report coverage.json
+                gocov-html coverage.json > $WERCKER_REPORT_ARTIFACTS_DIR/coverage.html
         - script:
             name: Coveralls.io
             code: |-
-                goveralls -coverprofile=profile.cov -service='wercker.com' $COVERALLS_TOKEN
+                go get github.com/mattn/goveralls
+                goveralls -package="./..." -service='wercker.com' $COVERALLS_TOKEN
 
         - script:
             name: Store cache
