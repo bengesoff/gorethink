@@ -1,3 +1,7 @@
+# Ensure the following environment variables are set
+#  $WERCKER_SOURCE_DIR  = "$GOPATH/github.com/dancannon/gorethink"
+#  $COVERALLS_TOKEN     = "..."
+
 box: wercker/golang
 # Services
 services:
@@ -6,31 +10,49 @@ services:
 build:
     # The steps that will be executed on build
     steps:
-      # Sets the go workspace and places you package
-      # at the right place in the workspace tree
-      - setup-go-workspace
+        # Sets the go workspace and places you package
+        # at the right place in the workspace tree
+        - pjvds/setup-go-workspace
 
-      # Gets the dependencies
-      - script:
-          name: get dependencies
-          code: |
-            cd $WERCKER_SOURCE_DIR
-            go version
-            go get ./... && go get -u gopkg.in/check.v1 && go test -i
+        - script:
+            name: Populate cache
+            code: |-
+                if test -d "$WERCKER_CACHE_DIR/go-pkg-cache"; then rsync -avzv --exclude "$WERCKER_SOURCE_DIR" "$WERCKER_CACHE_DIR/go-pkg-cache/" "$GOPATH/" ; fi
 
-      # Build the project
-      - script:
-          name: build
-          code: |
-            go build ./...
+        # Gets the dependencies
+        - script:
+            name: get dependencies
+            code: |
+                cd $WERCKER_SOURCE_DIR
+                go version
+                go get ./... && go get -u gopkg.in/check.v1 && go test -i
+                go get github.com/pjvds/gocov/gocov
+                go get github.com/mattn/goveralls
 
-      # Test the project
-      - script:
-          name: test
-          code: |
-            go test -test.v=true ./...
-      # - script:
-      #     name: test auth keys
-      #     code: |
-      #       sh -c "echo 'set auth test_key' | rethinkdb admin --join $$HOST$$:29015"
-      #       RETHINKDB_AUTHKEY=test_key go test -test.run="Test" -test.v=true -gocheck.f="TestConnectAuthKey"
+        # Build the project
+        - script:
+            name: build
+            code: |
+                go build ./...
+
+        # Test the project
+        - script:
+            name: test
+            code: |
+                gocov test ./... > coverage.json
+
+        - script:
+            name: Coverage
+            code: |-
+                go get github.com/matm/gocov-html
+                gocov report coverage.json
+                gocov-html coverage.json > $WERCKER_REPORT_ARTIFACTS_DIR/coverage.html
+        - script:
+            name: Coveralls.io
+            code: |-
+                goveralls -package="./..." -service='wercker.com' $COVERALLS_TOKEN
+
+        - script:
+            name: Store cache
+            code: |-
+                rsync -avzv --exclude "$WERCKER_SOURCE_DIR" "$GOPATH/" "$WERCKER_CACHE_DIR/go-pkg-cache/"
