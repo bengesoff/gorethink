@@ -1,5 +1,4 @@
 # Ensure the following environment variables are set
-#  $WERCKER_SOURCE_DIR  = "$GOPATH/github.com/dancannon/gorethink"
 #  $COVERALLS_TOKEN     = "..."
 
 box: wercker/golang
@@ -25,8 +24,9 @@ build:
             code: |
                 cd $WERCKER_SOURCE_DIR
                 go version
-                go get ./... && go get -u gopkg.in/check.v1 && go test -i
-                go get github.com/pjvds/gocov/gocov
+                go get ./...
+                get -u gopkg.in/check.v1
+                go get golang.org/x/tools/cmd/cover
                 go get github.com/mattn/goveralls
 
         # Build the project
@@ -39,18 +39,11 @@ build:
         - script:
             name: test
             code: |
-                gocov test ./... > coverage.json
-
-        - script:
-            name: Coverage
-            code: |-
-                go get github.com/matm/gocov-html
-                gocov report coverage.json
-                gocov-html coverage.json > $WERCKER_REPORT_ARTIFACTS_DIR/coverage.html
+                go test -covermode=count -coverprofile=profile.cov ./...
         - script:
             name: Coveralls.io
             code: |-
-                goveralls -package="./..." -service='wercker.com' $COVERALLS_TOKEN
+                goveralls -coverprofile=profile.cov -service='wercker.com' $COVERALLS_TOKEN
 
         - script:
             name: Store cache
