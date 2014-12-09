@@ -39,7 +39,7 @@ build:
                 go get -u gopkg.in/check.v1
                 go get launchpad.net/gocheck
                 go get github.com/axw/gocov/gocov
-                gocov test ./... > coverage.json
+                gocov test > coverage.json
         - script:
             name: Coverage
             code: |-
@@ -50,7 +50,7 @@ build:
             name: Coveralls.io
             code: |-
                 go get github.com/mattn/goveralls
-                goveralls -package="./..." -service='wercker.com' $COVERALLS_TOKEN
+                goveralls -service='wercker.com' $COVERALLS_TOKEN
 
         - script:
             name: Store cache
