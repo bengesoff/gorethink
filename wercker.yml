@@ -50,7 +50,7 @@ build:
             name: Coveralls.io
             code: |-
                 go get github.com/mattn/goveralls
-                goveralls -service='wercker.com' $COVERALLS_TOKEN
+                goveralls -service='wercker.com' -repotoken $COVERALLS_TOKEN
 
         - script:
             name: Store cache
